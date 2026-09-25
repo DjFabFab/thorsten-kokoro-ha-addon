@@ -28,7 +28,6 @@ schema:
   KOKORO_EPOCH: "int(1,10)"
   SPEED: "float(0.1,2.0)"
   HF_REPO_ID: "str"
-image: ghcr.io/thorstenvoice/{arch}-kokoro-ha-addon
 homeassistant: 2023.8.0
 country:
   - DE

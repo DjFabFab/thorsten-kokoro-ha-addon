@@ -22,7 +22,7 @@ Das Add-on startet zwei Prozesse: den HTTP Server und die Wyoming Bridge. Beide 
 3. Diese URL hinzufügen:
 
    ```
-   https://github.com/thorstenMueller/Thorsten-Voice
+    https://github.com/DjFabFab/thorsten-kokoro-ha-addon
    ```
 
 4. Mit **Hinzufügen** bestätigen. Das Add-on **Thorsten Kokoro** erscheint danach im Store.
