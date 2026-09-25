@@ -43,7 +43,7 @@ Das Add-on nutzt das vorgebaute Image auf GHCR:
 
 Tag und Versions Regel: der Image Tag entspricht immer der Add-on Version aus `thorsten_kokoro/config.yaml` (`version`). Ein Release Tag `v<VERSION>` baut und veröffentlicht `ghcr.io/djfabfab/thorsten-kokoro-ha-addon:<VERSION>`. Es gibt bewusst kein `latest` als Quelle für Home Assistant.
 
-Lokaler Build als Rückfall: enthält `thorsten_kokoro/Dockerfile`, daher baut Home Assistant das Image bei Bedarf lokal. Ohne `image:` Eintrag oder ohne Zugriff auf GHCR wird automatisch lokal gebaut.
+Lokaler Build als Rückfall: `thorsten_kokoro/Dockerfile` ist weiterhin enthalten. Falls der `image:`-Eintrag entfernt wird, baut Home Assistant das Image lokal.
 
 ### Optionen
 
