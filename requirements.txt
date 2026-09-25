@@ -15,4 +15,4 @@ wyoming==1.7.2
 # Deutsche Forks von misaki (G2P) und kokoro (Inferenz), siehe Model Card:
 # https://huggingface.co/Thorsten-Voice/Kokoro
 git+https://github.com/semidark/misaki.git@6d252a2e02f3b030f22f56686f1a73786c16ffc8
-git+https://github.com/semidark/kokoro.git
+git+https://github.com/semidark/kokoro.git@b96fef95e6a746495f92443fac7c688f90fc57fc
