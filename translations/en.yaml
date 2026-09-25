@@ -1,0 +1,21 @@
+---
+configuration:
+  KOKORO_EPOCH:
+    name: Kokoro epoch
+    description: >-
+      Which fine-tuned epoch of the Thorsten-Voice/Kokoro model to use.
+      Valid values are 1 to 10. The default of 5 is the recommended epoch.
+  SPEED:
+    name: Speaking speed
+    description: >-
+      Speed of the speech output. 1.0 is the default speaking rate, values
+      below 1.0 are slower, values above 1.0 are faster. Valid values are
+      0.1 to 2.0.
+  HF_REPO_ID:
+    name: Hugging Face repository
+    description: >-
+      Hugging Face repository ID from which the model and voice are loaded.
+      Defaults to Thorsten-Voice/Kokoro.
+network:
+  8000/tcp: HTTP TTS server
+  10200/tcp: Wyoming protocol

@@ -1,0 +1,56 @@
+=== bash -n run.sh ===
+exit 0 OK
+
+=== sh -n run.sh ===
+exit 0 OK
+
+=== py_compile http_server.py ===
+exit 0 OK
+
+=== grep -c 8000|10200 run.sh ===
+15
+
+=== port literals ===
+2:# Thorsten Kokoro HA Add-on startup: HTTP 8000 + Wyoming 10200 in parallel.
+10:# VOLUME /data/hf-cache, EXPOSE 8000 10200.
+55:PORT="${PORT:-8000}"
+67:echo "Starting http_server.py on port 8000 ..."
+68:python3 http_server.py --port 8000 &
+70:echo "http_server.py PID=$HTTP_PID port=8000"
+72:echo "Starting wyoming_bridge on port 10200 ..."
+73:python3 -m wyoming_bridge --uri tcp://0.0.0.0:10200 &
+75:echo "wyoming_bridge PID=$WYOMING_PID port=10200 (uri=tcp://0.0.0.0:10200)"
+78:echo "Warmup: waiting for http://localhost:8000/health (max ~60s) ..."
+81:  if curl -fs "http://localhost:8000/health" >/dev/null 2>&1; then
+82:    echo "Warmup OK: HTTP 8000 healthy."
+87:    echo "ERROR: http_server.py (8000) exited early." >&2
+92:    echo "ERROR: wyoming_bridge (10200) exited early." >&2
+103:echo "Both services running: HTTP=8000 (PID $HTTP_PID) Wyoming=10200 (PID $WYOMING_PID)"
+
+=== endpoints ===
+32:    from fastapi.responses import StreamingResponse
+37:    FastAPI = HTTPException = StreamingResponse = None  # type: ignore[assignment]
+134:    @app.get("/health")
+135:    def health():
+146:    @app.post("/tts")
+147:    def tts(req: TTSRequest):
+152:            raise HTTPException(422, "Field 'text' must be non-empty.")
+174:        return StreamingResponse(
+
+=== bridge reuse ===
+43:    from wyoming_bridge.server import (
+0
+0 duplicate defs
+
+=== license ===
+Upstream: https://github.com/thorstenMueller/Thorsten-Voice (LICENSE = CC0 1.0 Universal, public domain dedication)
+Upstream docker/kokoro/server.py carries NO license header (verified via raw fetch).
+CC0 allows reuse incl. commercial; attribution comment kept at top of http_server.py.
+
+=== missing options.json defaults proof ===
+19:# --- Options from Home Assistant (/data/options.json) with defaults ---
+21:# KOKORO_EPOCH default 5 (range 1-10)
+22:# SPEED default 1.0
+23:# HF_REPO_ID default Thorsten-Voice/Kokoro
+45:  echo "No $OPTIONS_FILE found, using defaults: KOKORO_EPOCH=5 SPEED=1.0 HF_REPO_ID=Thorsten-Voice/Kokoro"
+48:# KOKORO_EPOCH default 5, SPEED default 1.0, HF_REPO_ID default Thorsten-Voice/Kokoro

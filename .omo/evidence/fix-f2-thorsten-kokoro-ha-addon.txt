@@ -1,0 +1,42 @@
+F2 comment-hygiene fix — thorsten-kokoro-ha-addon
+Date: 2026-09-22
+Scope: comment-only + WARN string interpolation. NO logic changes, NO dep changes.
+
+Files modified:
+  1. Dockerfile L40-42: stale "Todo 4 owns these / Platzhalter" comment replaced with:
+       # HTTP + Wyoming entrypoint: http_server.py (FastAPI, Port 8000) + run.sh
+       # (dual startup 8000+10200).
+  2. requirements.txt L3: "# Plus wyoming fuer die Bridge (Todo 3). KEIN CUDA, KEIN GPU-Index."
+       -> "# Plus wyoming fuer die Wyoming Bridge. KEIN CUDA, KEIN GPU-Index."
+  3. run.sh L35: print('echo \"WARN: could not parse $OPTIONS_FILE: %s\" % exc')
+       -> print('echo \"WARN: could not parse %s: %s\"' % ('$OPTIONS_FILE', exc))
+       (exception text now actually interpolated; shell expands $OPTIONS_FILE in the
+        double-quoted python -c, % operator applies to the format string)
+
+Verification 1 — grep zero (todo|platzhalter|placeholder, case-insensitive):
+  $ grep -rni "todo\|platzhalter\|placeholder" Dockerfile requirements.txt run.sh http_server.py wyoming_bridge/server.py
+  (no output)
+  grep exit code: 1  -> ZERO matches
+
+Verification 2 — shell syntax:
+  $ bash -n run.sh && sh -n run.sh
+  exit 0 (SYNTAX OK)
+
+Verification 3 — WARN interpolation synthetic test:
+  $ printf '{"KOKORO_EPOCH": ' > /tmp/options-bad.json
+  $ python3 -c "
+  import json
+  try:
+      opts = json.load(open('/tmp/options-bad.json'))
+  except Exception as exc:
+      print('echo \"WARN: could not parse %s: %s\"' % ('/tmp/options-bad.json', exc))
+  "
+  Output: echo "WARN: could not parse /tmp/options-bad.json: Expecting value: line 1 column 18 (char 17)"
+  -> real error text shown, NOT literal %s. Temp file deleted after test.
+
+Verification 4 — rebuild:
+  $ docker build -t thorsten-kokoro-addon:test .
+  exit 0 (cached layers; only COPY http_server.py/run.sh re-ran; ~28s)
+  manifest sha256:21f13b6746bc62dd8b6d8eed1b48c5202dcfd316aab8b4c9224bd597222036ad
+
+Result: F2 REJECT findings resolved. Byte-identical runtime behavior except correct WARN error text.

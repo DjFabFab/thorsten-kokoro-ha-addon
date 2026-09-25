@@ -1,0 +1,175 @@
+=== TASK 6 EVIDENCE 2026-09-22T20:25:45Z ===
+--- pre-cleanup ---
+ports 8000/10200 free
+choice: docker run (simpler than compose for QA; compose file kept untouched per MUST-NOT-DO)
+67a3cec67aa299e3369bea5c09bb892302b05104508c744a67e0f5a8fa895cd4
+tkqa Up Less than a second (health: starting) 0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp, 0.0.0.0:10200->10200/tcp, [::]:10200->10200/tcp
+No /data/options.json found, using defaults: KOKORO_EPOCH=5 SPEED=1.0 HF_REPO_ID=Thorsten-Voice/Kokoro
+Options: KOKORO_EPOCH=5 SPEED=1.0 HF_REPO_ID=Thorsten-Voice/Kokoro HF_CACHE=/data/hf-cache
+Starting http_server.py on port 8000 ...
+http_server.py PID=8 port=8000
+Starting wyoming_bridge on port 10200 ...
+wyoming_bridge PID=9 port=10200 (uri=tcp://0.0.0.0:10200)
+Warmup: waiting for http://localhost:8000/health (max ~60s) ...
+--- health poll start 2026-09-22T20:25:49Z ---
+attempt 1 2026-09-22T20:25:49Z: CURL_FAIL
+attempt 2 2026-09-22T20:25:59Z: CURL_FAIL
+attempt 3 2026-09-22T20:26:09Z: CURL_FAIL
+attempt 4 2026-09-22T20:26:19Z: CURL_FAIL
+attempt 5 2026-09-22T20:26:29Z: {"status":"ok","epoch":5,"repo":"Thorsten-Voice/Kokoro","repo_id":"Thorsten-Voice/Kokoro","device":"cpu"}
+HEALTH_OK at attempt 5
+--- health poll end ---
+{"status":"ok","epoch":5,"repo":"Thorsten-Voice/Kokoro","repo_id":"Thorsten-Voice/Kokoro","device":"cpu"}
+No /data/options.json found, using defaults: KOKORO_EPOCH=5 SPEED=1.0 HF_REPO_ID=Thorsten-Voice/Kokoro
+Options: KOKORO_EPOCH=5 SPEED=1.0 HF_REPO_ID=Thorsten-Voice/Kokoro HF_CACHE=/data/hf-cache
+Starting http_server.py on port 8000 ...
+http_server.py PID=8 port=8000
+Starting wyoming_bridge on port 10200 ...
+wyoming_bridge PID=9 port=10200 (uri=tcp://0.0.0.0:10200)
+Warmup: waiting for http://localhost:8000/health (max ~60s) ...
+Loading Thorsten Kokoro repo=Thorsten-Voice/Kokoro epoch=5 files=(model.pth, voices/thorsten.pt) speed=1.0
+/app/http_server.py:124: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+INFO:     Started server process [8]
+INFO:     Waiting for application startup.
+INFO:thorsten-kokoro-http:Loading Thorsten-Voice/Kokoro epoch=5 files=(model.pth, voices/thorsten.pt) ...
+INFO:thorsten-kokoro-http:Startup files: config=/data/hf-cache/models--Thorsten-Voice--Kokoro/snapshots/734e593d320a3d876bede7020f773dfd481a0cc7/config.json model=/data/hf-cache/models--Thorsten-Voice--Kokoro/snapshots/734e593d320a3d876bede7020f773dfd481a0cc7/model.pth voice=/data/hf-cache/models--Thorsten-Voice--Kokoro/snapshots/734e593d320a3d876bede7020f773dfd481a0cc7/voices/thorsten.pt
+Model ready on cpu; listening on tcp://0.0.0.0:10200
+INFO:wyoming_bridge.server:Ready. Listening on tcp://0.0.0.0:10200
+INFO:thorsten-kokoro-http:Model ready (epoch=5 device=cpu).
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54966 - "GET /health HTTP/1.1" 200 OK
+Warmup OK: HTTP 8000 healthy.
+Both services running: HTTP=8000 (PID 8) Wyoming=10200 (PID 9)
+INFO:     127.0.0.1:49430 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.17.0.1:52540 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.17.0.1:52552 - "GET /health HTTP/1.1" 200 OK
+--- TTS POST start 2026-09-22T20:26:41Z ---
+
+HTTP_CODE:200
+TTS_LATENCY_S=1
+-rw-r--r-- 1 waescherf waescherf 106844 22. Sep 22:26 /tmp/t.wav
+106844
+SIZE_CHECK_GT_10000: PASS
+framerate=24000 channels=1 sampwidth=2 frames=53400
+WAV_PARAMS: PASS 24kHz mono
+-rw-r--r-- 1 waescherf waescherf 106844 22. Sep 22:26 .omo/evidence/task-6-thorsten-kokoro-ha-addon.wav
+--- FAILURE CASE: POST {} ---
+FAILURE_CASE_HTTP_CODE:422
+--- ARM64 CHECK 2026-09-22T20:26:54Z ---
+Dockerfile arch-specific RUN scan (expect none: no nvidia/cuda/aarch64-only):
+1:# Thorsten Kokoro HA Add-on — CPU-only, multi-arch (amd64 + aarch64)
+3:# KEIN CUDA, KEIN GPU-Layer: torch kommt ausschliesslich vom CPU-Index
+5:# Keine arch-spezifischen RUNs, kein nvidia — pure CPU-Wheels laufen auf
+6:# amd64 und aarch64. Multi-arch Build: `docker buildx build --platform
+7:# linux/amd64,linux/arm64 -t thorsten-kokoro-addon:test .`
+Base image arch support:
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.index.v1+json",
+  "digest": "sha256:da047cb8f9d1d98e5c070f5300ba9f7274e33b8fc0e5be5ed88740aed1b95ba9",
+  "size": 10373,
+  "manifests": [
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:174bec68e0451bffabbb08c7d5d21c6b253f772d81d52b9558af97bb3159b761",
+      "size": 1746,
+      "annotations": {
+        "com.docker.official-images.bashbrew.arch": "amd64",
+        "org.opencontainers.image.base.digest": "sha256:7792b1f7702a86946cd518db72b6a407302c3e9bc1635634368b878189e8221c",
+        "org.opencontainers.image.base.name": "debian:trixie-slim",
+        "org.opencontainers.image.created": "2026-09-19T00:59:13Z",
+        "org.opencontainers.image.revision": "688a0b86bb44289df16a363e9f41d90514c1a5f9",
+        "org.opencontainers.image.source": "https://github.com/docker-library/python.git#688a0b86bb44289df16a363e9f41d90514c1a5f9:3.11/slim-trixie",
+        "org.opencontainers.image.url": "https://hub.docker.com/_/python",
+        "org.opencontainers.image.version": "3.11.16-slim-trixie"
+      },
+      "platform": {
+        "architecture": "amd64",
+        "os": "linux"
+      }
+    },
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:9fdc56aa4a1bc12803fa0a86227f6306a03cc033b12941131b3232a7d7f263fb",
+      "size": 841,
+      "annotations": {
+        "com.docker.official-images.bashbrew.arch": "amd64",
+        "vnd.docker.reference.digest": "sha256:174bec68e0451bffabbb08c7d5d21c6b253f772d81d52b9558af97bb3159b761",
+        "vnd.docker.reference.type": "attestation-manifest"
+      },
+      "platform": {
+        "architecture": "unknown",
+        "os": "unknown"
+      }
+    },
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:5de1facaaeeaabae76d2bb2ec2cc283fe7d2d4d95c71a1da40fba25bbf2b1bb2",
+      "size": 1748,
+      "annotations": {
+        "com.docker.official-images.bashbrew.ar
+unknown flag: --dry-run
+
+Usage:  docker buildx build [OPTIONS] PATH | URL | -
+
+Run 'docker buildx build --help' for more information
+(dry-run flag may be unsupported on this buildx version; config-level neutrality documented above; full arm64 build intentionally skipped per plan to avoid 30+ min)
+--- HF CACHE SIZE ---
+313M	/data/hf-cache
+ls: cannot access '/data/hf-cache/models--Thorsten-Voice--Kokoro/snapshots/*/': No such file or directory
+Name:      docker.io/library/python:3.11-slim
+  Name:        docker.io/library/python:3.11-slim@sha256:174bec68e0451bffabbb08c7d5d21c6b253f772d81d52b9558af97bb3159b761
+  Platform:    linux/amd64
+    org.opencontainers.image.base.name:       debian:trixie-slim
+  Name:        docker.io/library/python:3.11-slim@sha256:9fdc56aa4a1bc12803fa0a86227f6306a03cc033b12941131b3232a7d7f263fb
+  Platform:    unknown/unknown
+  Name:        docker.io/library/python:3.11-slim@sha256:5de1facaaeeaabae76d2bb2ec2cc283fe7d2d4d95c71a1da40fba25bbf2b1bb2
+  Platform:    linux/arm/v5
+    org.opencontainers.image.base.name:       debian:trixie-slim
+  Name:        docker.io/library/python:3.11-slim@sha256:7b73bedfa246e251e5dcf79383aefaafeb4908fde19ec55e0eb8e8f45ca8ed3c
+  Platform:    unknown/unknown
+  Name:        docker.io/library/python:3.11-slim@sha256:fd8eef5ec35760c892421894b13305280f6390ba14189f0e8b5e508e3912527e
+  Platform:    linux/arm/v7
+    org.opencontainers.image.base.name:       debian:trixie-slim
+  Name:        docker.io/library/python:3.11-slim@sha256:f70c3c60484963298b5ad6e204afa878f2820e1fbd087c8e606176ff1f4fa4c2
+  Platform:    unknown/unknown
+  Name:        docker.io/library/python:3.11-slim@sha256:8b29ec24b5f3c929a79b55772b95c93311b7133f1cf7fa0a6141ef621f8e3c57
+  Platform:    linux/arm64/v8
+    org.opencontainers.image.base.name:       debian:trixie-slim
+  Name:        docker.io/library/python:3.11-slim@sha256:17f5c333af9db993dff475e0a61aff83838d579f3a4f96756fe605d0f1d28610
+--- hf-cache real layout ---
+/data/hf-cache
+/data/hf-cache/.locks
+/data/hf-cache/.locks/models--Thorsten-Voice--Kokoro
+/data/hf-cache/models--Thorsten-Voice--Kokoro
+/data/hf-cache/models--Thorsten-Voice--Kokoro/refs
+/data/hf-cache/models--Thorsten-Voice--Kokoro/snapshots
+/data/hf-cache/models--Thorsten-Voice--Kokoro/snapshots/734e593d320a3d876bede7020f773dfd481a0cc7
+/data/hf-cache/models--Thorsten-Voice--Kokoro/snapshots/734e593d320a3d876bede7020f773dfd481a0cc7/voices
+/data/hf-cache/models--Thorsten-Voice--Kokoro/blobs
+du: cannot access '/data/hf-cache/*': No such file or directory
+--- SHUTDOWN 2026-09-22T20:27:13Z ---
+INFO:     172.17.0.1:40378 - "POST /tts HTTP/1.1" 200 OK
+INFO:     172.17.0.1:40394 - "POST /tts HTTP/1.1" 422 Unprocessable Entity
+tkqa
+tkqa
+local     tkqa-hf
+(volume KEPT per plan; Todo 7 owns cleanup)
+ports 8000/10200 free
+--- EVIDENCE FILES ---
+-rw-r--r-- 1 waescherf waescherf   9058 22. Sep 22:27 .omo/evidence/task-6-thorsten-kokoro-ha-addon.txt
+-rw-r--r-- 1 waescherf waescherf 106844 22. Sep 22:26 .omo/evidence/task-6-thorsten-kokoro-ha-addon.wav
+NO_PUSH: QA only, no registry push performed
+=== TASK 6 DONE 2026-09-22T20:27:13Z ===
+--- BUILD SUMMARY (rebuilt 2026-09-22T20:25:25Z) ---
+cmd: docker build -t thorsten-kokoro-addon:test .
+BUILD_EXIT=0, duration ~2s (all heavy layers CACHED; only COPY http_server.py/run.sh + chmod re-ran).
+steps 10-13 re-ran: COPY wyoming_bridge/ DONE, COPY http_server.py DONE, COPY run.sh DONE, chmod+mkdir DONE.
+verify inside image: http_server.py head shows FastAPI adaptation header (not placeholder); run.sh head shows dual-startup header; grep options.json=3, grep FastAPI=4.

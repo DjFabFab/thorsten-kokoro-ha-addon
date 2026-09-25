@@ -1,0 +1,61 @@
+Task 5 evidence — thorsten-kokoro-ha-addon (README + HA Doku)
+Date: 2026-09-22 (UTC)
+Workdir: /home/waescherf/.config/openchamber/chats/2026-09-22/session-7eb70d9e-fdbd-423d-ae20-fa26e6f81e3f
+Files: README.md (new, 126 lines), docker-compose.example.yml (new, optional)
+
+--- CHECK 1: grep -c "10200\|8000\|KOKORO_EPOCH" README.md ---
+10 (>=3 PASS)
+
+--- CHECK 2: grep -c "thorstenvoice/kokoro-tts\|Thorsten-Voice/Kokoro" README.md ---
+5 (>=2 PASS)
+
+--- CHECK 3: all curl POST examples contain Content-Type json ---
+$ grep -n "curl -s -X POST" README.md
+74:curl -s -X POST http://localhost:8000/tts -H "Content-Type: application/json" -d '{"text":"Hallo, hier spricht Thorsten."}' --output hallo.wav
+PASS (exact command from plan Todo 5, includes -H "Content-Type: application/json")
+
+--- CHECK 4: literal strings present ---
+8000: 5 occurrences
+10200: 3 occurrences
+KOKORO_EPOCH: 2 occurrences
+Thorsten-Voice/Kokoro: 4 occurrences
+thorstenvoice/kokoro-tts: 1 occurrence
+PASS (combined "8000|10200|KOKORO_EPOCH" >=3; combined repo strings >=2)
+
+--- CHECK 5: no em/en dashes (anti-slop) ---
+grep -P "[\x{2014}\x{2013}]" README.md -> no matches (exit 1)
+PASS
+
+--- CHECK 6: ports match config.yaml exactly ---
+config.yaml ports: {"8000/tcp": 8000, "10200/tcp": 10200}
+README Ports table: 8000 HTTP, 10200 Wyoming
+python3 assert '8000' in str(c['ports']) and '10200' in str(c['ports']) -> PORTS_MATCH_CONFIG
+PASS (no falsche Portangaben)
+
+--- CHECK 7: docker-compose.example.yml parses ---
+python3 yaml.safe_load -> COMPOSE_OK
+ports ['8000:8000','10200:10200'], volume hf-cache:/data/hf-cache,
+env KOKORO_EPOCH=5 SPEED=1.0 HF_REPO_ID=Thorsten-Voice/Kokoro
+PASS
+
+--- README excerpt (head) ---
+# Thorsten Kokoro HA Add-on
+
+Deutsche Sprachausgabe mit Thorstens Stimme für Home Assistant, auf Basis des
+Kokoro Modells. Das Add-on läuft komplett lokal auf der CPU, ohne Cloud und
+ohne Grafikchip.
+
+## Überblick
+- Stimme: Thorsten, deutsch (de)
+- HTTP Server: Port 8000, GET /health und POST /tts
+- Wyoming Server: Port 10200 für die Home Assistant Assist Pipeline
+- Plattform: CPU-only, amd64 und aarch64
+- Modell: Thorsten-Voice/Kokoro, ein Feinschliff des Kokoro-82M Modells
+
+Sections: Überblick, Installation (Repository hinzufügen, installieren/starten,
+Optionen), Wyoming Integration, HTTP Nutzung (curl /health + /tts), Epoch
+Tabelle 1-10, Konfiguration, Ports, RAM Hinweis (700MB-1GB, zwei Prozesse),
+Bekannte Limits (Bindestrich-Komposita, Satz-Split ~300 Zeichen, ʏ→y, Umlaute),
+Links (HF, Docker Hub, Wyoming Doku).
+
+RESULT: all checks green.

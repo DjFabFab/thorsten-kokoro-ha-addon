@@ -1,0 +1,18 @@
+# Lokaler Test-Compose für das Thorsten Kokoro Add-on.
+# Vorher das Image bauen: docker build -t thorsten-kokoro-addon:test .
+services:
+  thorsten-kokoro:
+    image: thorsten-kokoro-addon:test
+    ports:
+      - "8000:8000"
+      - "10200:10200"
+    volumes:
+      - hf-cache:/data/hf-cache
+    environment:
+      KOKORO_EPOCH: "5"
+      SPEED: "1.0"
+      HF_REPO_ID: "Thorsten-Voice/Kokoro"
+    restart: unless-stopped
+
+volumes:
+  hf-cache:

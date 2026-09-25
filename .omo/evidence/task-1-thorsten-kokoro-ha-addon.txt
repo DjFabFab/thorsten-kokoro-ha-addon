@@ -1,0 +1,67 @@
+=== Task 1 Evidence: Add-on Repo Geruest ===
+Timestamp: 2026-09-22T20:13:30Z
+
+--- ls -R ---
+.:
+config.yaml
+repository.yaml
+translations
+wyoming_bridge
+
+./translations:
+de.yaml
+en.yaml
+
+./wyoming_bridge:
+__init__.py
+
+--- ls config.yaml translations/de.yaml translations/en.yaml repository.yaml ---
+config.yaml
+repository.yaml
+translations/de.yaml
+translations/en.yaml
+
+--- yaml parse checks ---
+config.yaml parses OK
+de.yaml parses OK
+en.yaml parses OK
+repository.yaml parses OK
+
+--- acceptance assertions ---
+assertions OK (string form)
+
+--- config.yaml content ---
+---
+name: Thorsten Kokoro
+version: "1.0.0"
+slug: thorsten_kokoro
+description: >-
+  German text-to-speech with Thorsten's voice, based on the Kokoro model.
+  Serves TTS over HTTP (port 8000) and the Wyoming protocol (port 10200)
+  for the Home Assistant Assist pipeline.
+url: https://github.com/thorstenMueller/Thorsten-Voice
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+discovery:
+  - wyoming
+map:
+  - hf-cache:rw
+ports:
+  "8000/tcp": 8000
+  "10200/tcp": 10200
+options:
+  KOKORO_EPOCH: 5
+  SPEED: 1.0
+  HF_REPO_ID: "Thorsten-Voice/Kokoro"
+schema:
+  KOKORO_EPOCH: "int(1,10)"
+  SPEED: "float(0.1,2.0)"
+  HF_REPO_ID: "str"
+image: ghcr.io/thorstenvoice/{arch}-kokoro-ha-addon
+homeassistant: 2023.8.0
+country:
+  - DE

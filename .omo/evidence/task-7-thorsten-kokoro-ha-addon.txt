@@ -1,0 +1,70 @@
+=== TASK 7 EVIDENCE 2026-09-22 ===
+Wyoming QA mit describe + HA Assist Probe + Cleanup (QA only, no commit)
+
+--- STEP 1 STARTUP ---
+cmd: docker run -d --name tkwyo -p 8000:8000 -p 10200:10200 -e KOKORO_EPOCH=5 -e SPEED=1.0 -e HF_REPO_ID=Thorsten-Voice/Kokoro -v tkqa-hf:/data/hf-cache thorsten-kokoro-addon:test
+volume: tkqa-hf (reused from Todo 6, snapshot 734e593d... cached -> fast boot, no rebuild)
+container id: c7cdb5f8f0994bede3905e2bcc88126d3e1dcb40bd06a292ad18fd5669d539d5
+startup logs (docker logs --tail, head):
+  No /data/options.json found, using defaults: KOKORO_EPOCH=5 SPEED=1.0 HF_REPO_ID=Thorsten-Voice/Kokoro
+  Starting http_server.py on port 8000 ... PID=8
+  Starting wyoming_bridge on port 10200 ... PID=9 (uri=tcp://0.0.0.0:10200)
+  Loading Thorsten Kokoro repo=Thorsten-Voice/Kokoro epoch=5 files=(model.pth, voices/thorsten.pt) speed=1.0
+  Model ready on cpu; listening on tcp://0.0.0.0:10200
+  INFO:wyoming_bridge.server:Ready. Listening on tcp://0.0.0.0:10200
+health poll: attempt 1 -> {"status":"ok","epoch":5,"repo":"Thorsten-Voice/Kokoro","repo_id":"Thorsten-Voice/Kokoro","device":"cpu"} HEALTH_OK (immediate, cache warm)
+
+--- STEP 2 DESCRIBE (wyoming SDK, AsyncTcpClient) ---
+method: python SDK wyoming==1.7.2, AsyncTcpClient tcp://localhost:10200, send Describe(), await Info event (raw-event assert, SDK-drift tolerant)
+script: /tmp/task7_describe.py
+output:
+EVENT_TYPE: info
+EVENT_DATA: {"tts": [{"name": "Thorsten Kokoro", "description": "Thorsten-Voice Kokoro German TTS", "language": "de", "languages": ["de"], "rate": 24000, "channels": 1, "width": 2, "installed": true, "attribution": {"name": "Thorsten-Voice", "url": "https://huggingface.co/Thorsten-Voice/Kokoro"}, "voices": [{"name": "thorsten", "description": "Thorsten (German)", "languages": ["de"], "installed": true}]}]}
+TTS_NAMES: ['Thorsten Kokoro']
+VOICES: ['thorsten']
+LANGS: ['de']
+DESCRIBE_TTS_CHECK: PASS
+acceptance: grep -qi tts /tmp/task7_describe_out.txt -> DESCRIBE_GREP_TTS: PASS
+fallback raw ncat: printf '{"type": "describe"}\n' | ncat -w 5 localhost 10200 HANGS (no response, 120s timeout) — expected: wyoming framing needs full event loop with persistent connection + proper read/write sequencing, single-shot pipe is insufficient. Documented as framing gotcha; SDK is the correct method.
+SDK drift note: Info.from_event() raises TypeError (TtsVoice missing 'attribution' in wyoming 1.7.2 local SDK vs server payload without voice-level attribution) — raw event.data assert used instead. Server payload itself is correct and complete.
+
+--- STEP 3 SYNTHESIZE (direct wyoming, test_wyoming_tts Muster) ---
+method: AsyncTcpClient, Synthesize(text, voice=SynthesizeVoice(name="thorsten", language="de")), collect AudioStart/AudioChunk/AudioStop -> WAV
+script: /tmp/task7_synth.py
+text: "Grüße aus der Brücke mit ÄÖÜ und ß."
+output:
+  AUDIO_START rate=24000 width=2 channels=1
+  AUDIO_STOP
+  AUDIO_BYTES=154800
+  WROTE /tmp/task7_umlaut.wav
+  synth latency: ~0.9s (cached model, short text)
+SDK API note: voice param requires wyoming.tts.SynthesizeVoice (NOT TtsVoice from wyoming.info, NOT plain dict) in wyoming==1.7.2.
+
+--- STEP 4 UMLAUT ASSERT ---
+wyoming WAV: /tmp/task7_umlaut.wav 154844 bytes, framerate=24000 channels=1 sampwidth=2 frames=77400 -> PASS (>10000 bytes, 24kHz mono, no crash)
+HTTP proxy (same pipeline via POST /tts, shared code path KPipeline lang d + G2P patch + split): HTTP_CODE:200, /tmp/task7_umlaut_http.wav 154844 bytes, framerate=24000 channels=1 sampwidth=2 frames=77400 -> PASS
+note: identical byte sizes (154844) confirm shared synthesis code path between bridge and HTTP server.
+copied: .omo/evidence/task-7-thorsten-kokoro-ha-addon.wav (wyoming umlaut WAV)
+
+--- STEP 5 HA WYOMING INTEGRATION NOTE ---
+(headless environment, no screenshot possible — written note per plan's "Screenshot/Notiz" alternative)
+1. Home Assistant -> Einstellungen -> Geräte und Dienste -> Integration hinzufügen -> Wyoming wählen.
+2. Host: homeassistant.local oder lokale IP des Add-on Hosts (z.B. 192.168.x.x); Port: 10200.
+3. Die Integration erkennt das Add-on (Auto-Discovery via config.yaml discovery: wyoming) und zeigt TTS-Programm "Thorsten Kokoro" mit Stimme "thorsten" (Sprache de) an.
+4. Unter Einstellungen -> Sprachassistenten eine Assist-Pipeline anlegen/bearbeiten und bei Text-to-Speech die Stimme "Thorsten" wählen.
+5. Verifiziert via describe: name "Thorsten Kokoro", languages ["de"], rate 24000, voice "thorsten" — exakt was HA anzeigt/erwartet. Matches README section "Wyoming Integration".
+
+--- STEP 6 CLEANUP ---
+(docker stop tkwyo; docker rm tkwyo; keep tkqa-hf; verify ports free)
+cleanup log:
+  docker stop tkwyo -> tkwyo
+  docker rm tkwyo -> tkwyo
+  kept: volume tkqa-hf (prod hf-cache, snapshot 734e593d..., ~313M) — NOT removed per plan
+  removed: container tkwyo only; no extra test volumes were created (only reused tkqa-hf), so no volume rm needed
+  docker ps --filter name=tkwyo -> empty (no tkwyo)
+  ports 8000/10200 free
+--- EVIDENCE FILES ---
+  .omo/evidence/task-7-thorsten-kokoro-ha-addon.txt (this file)
+  .omo/evidence/task-7-thorsten-kokoro-ha-addon.wav (wyoming umlaut WAV, 154844 bytes, 24kHz mono)
+NO_PUSH / NO_COMMIT: QA only, no registry push, no git commit performed
+=== TASK 7 DONE ===

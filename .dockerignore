@@ -1,0 +1,6 @@
+.omo/evidence/
+.omo/notepads/
+.codegraph/
+__pycache__/
+*.pyc
+.git/
