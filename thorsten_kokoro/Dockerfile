@@ -15,6 +15,7 @@ ENV PYTHONUNBUFFERED=1 \
     KOKORO_EPOCH=5 \
     SPEED=1.0 \
     HF_REPO_ID=Thorsten-Voice/Kokoro \
+    ENABLE_HTTP=false \
     PORT=8000
 
 # espeak-ng (+data): Phonemizer-Backend fuer misaki de-G2P
@@ -48,6 +49,6 @@ EXPOSE 8000 10200
 VOLUME ["/data/hf-cache"]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=5 \
-    CMD curl -f "http://localhost:${PORT}/health" || exit 1
+    CMD python3 -c "import socket;socket.create_connection(('127.0.0.1',10200),timeout=4).close()" && { [ "${ENABLE_HTTP:-false}" != "true" ] || curl -f "http://localhost:${PORT:-8000}/health"; } || exit 1
 
 ENTRYPOINT ["./run.sh"]

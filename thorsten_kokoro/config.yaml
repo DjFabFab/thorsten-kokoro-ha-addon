@@ -5,8 +5,9 @@ slug: thorsten_kokoro
 image: ghcr.io/djfabfab/thorsten-kokoro-ha-addon
 description: >-
   German text-to-speech with Thorsten's voice, based on the Kokoro model.
-  Serves TTS over HTTP (port 8000) and the Wyoming protocol (port 10200)
-  for the Home Assistant Assist pipeline.
+  Serves TTS over the Wyoming protocol (port 10200) for the Home Assistant
+  Assist pipeline (auto-discovered, no host port needed). Optional HTTP
+  server (port 8000) can be enabled via ENABLE_HTTP.
 url: https://github.com/thorstenMueller/Thorsten-Voice
 arch:
   - amd64
@@ -19,16 +20,18 @@ discovery:
 map:
   - hf-cache:rw
 ports:
-  "8000/tcp": 8000
-  "10200/tcp": 10200
+  "8000/tcp": null
+  "10200/tcp": null
 options:
   KOKORO_EPOCH: 5
   SPEED: 1.0
   HF_REPO_ID: "Thorsten-Voice/Kokoro"
+  ENABLE_HTTP: false
 schema:
   KOKORO_EPOCH: "int(1,10)"
   SPEED: "float(0.1,2.0)"
   HF_REPO_ID: "str"
+  ENABLE_HTTP: "bool"
 homeassistant: 2023.8.0
 country:
   - DE

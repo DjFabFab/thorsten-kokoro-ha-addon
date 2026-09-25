@@ -17,6 +17,12 @@ configuration:
     description: >-
       Hugging Face Repository-ID, aus der das Modell und die Stimme geladen
       werden. Standard ist Thorsten-Voice/Kokoro.
+  ENABLE_HTTP:
+    name: HTTP Server
+    description: >-
+      Optionaler HTTP TTS Server auf Port 8000 (/tts und /health).
+      Standard ist aus, Wyoming auf Port 10200 wird per Auto Discovery
+      gefunden und braucht kein Host Port Mapping.
 network:
-  8000/tcp: HTTP TTS Server
-  10200/tcp: Wyoming Protokoll
+  8000/tcp: HTTP TTS Server (nur wenn aktiviert)
+  10200/tcp: Wyoming Protokoll (Auto Discovery, kein Mapping nötig)
