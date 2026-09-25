@@ -12,6 +12,8 @@ services:
       KOKORO_EPOCH: "5"
       SPEED: "1.0"
       HF_REPO_ID: "Thorsten-Voice/Kokoro"
+      # HTTP 8000 bleibt im Add-on per Default aus; für den lokalen Test hier einschalten.
+      ENABLE_HTTP: "true"
     restart: unless-stopped
 
 volumes:
