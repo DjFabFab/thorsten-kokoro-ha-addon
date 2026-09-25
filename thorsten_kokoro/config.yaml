@@ -2,6 +2,7 @@
 name: Thorsten Kokoro
 version: "1.0.0"
 slug: thorsten_kokoro
+image: ghcr.io/djfabfab/thorsten-kokoro-ha-addon
 description: >-
   German text-to-speech with Thorsten's voice, based on the Kokoro model.
   Serves TTS over HTTP (port 8000) and the Wyoming protocol (port 10200)

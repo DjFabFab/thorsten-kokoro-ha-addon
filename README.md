@@ -30,9 +30,20 @@ Das Add-on startet zwei Prozesse: den HTTP Server und die Wyoming Bridge. Beide 
 ### Add-on installieren und starten
 
 1. Im Add-on Store **Thorsten Kokoro** öffnen.
-2. Auf **Installieren** klicken. Das Image ist etwa 2,7 GB groß, der Download dauert etwas.
+2. Auf **Installieren** klicken. Das Image ist etwa 2,7 GB groß, der Download dauert etwas. Standardmäßig wird das vorgebaute Image `ghcr.io/djfabfab/thorsten-kokoro-ha-addon` in der zur Add-on Version passenden Tag Version installiert, siehe vorgebautes Image.
 3. Optional die Optionen anpassen, siehe Konfiguration.
 4. Auf **Starten** klicken. Beim ersten Start lädt das Add-on das Modell von Hugging Face, das kann einige Minuten dauern.
+
+## Vorgebautes Image
+
+Das Add-on nutzt das vorgebaute Image auf GHCR:
+
+- Paket: `https://github.com/DjFabFab/thorsten-kokoro-ha-addon/pkgs/container/thorsten-kokoro-ha-addon`
+- Image: `ghcr.io/djfabfab/thorsten-kokoro-ha-addon:<VERSION>`
+
+Tag und Versions Regel: der Image Tag entspricht immer der Add-on Version aus `thorsten_kokoro/config.yaml` (`version`). Ein Release Tag `v<VERSION>` baut und veröffentlicht `ghcr.io/djfabfab/thorsten-kokoro-ha-addon:<VERSION>`. Es gibt bewusst kein `latest` als Quelle für Home Assistant.
+
+Lokaler Build als Rückfall: enthält `thorsten_kokoro/Dockerfile`, daher baut Home Assistant das Image bei Bedarf lokal. Ohne `image:` Eintrag oder ohne Zugriff auf GHCR wird automatisch lokal gebaut.
 
 ### Optionen
 
