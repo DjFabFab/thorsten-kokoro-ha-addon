@@ -1,0 +1,167 @@
+# Build and publish prebuilt add-on images to GHCR.
+#
+# Triggers:
+#   - Tag push `v*` ............ production build, pushes
+#     ghcr.io/djfabfab/thorsten-kokoro-ha-addon:<VERSION> (VERSION = tag
+#     without the leading `v`, REQUIRED to equal thorsten_kokoro/config.yaml
+#     `version` before any login/push step).
+#   - Push to `main` ............ test build, pushes SHA tag only
+#     (ghcr.io/djfabfab/thorsten-kokoro-ha-addon:sha-<shortsha>), never a
+#     production version tag.
+#   - Pull request ............... build only (`push: false`), never pushes,
+#     never publishes a production version tag.
+#   - Manual dispatch ............ build only by default (`push` input defaults
+#     to false); even with `push: true` only a test/dispatch tag is pushed,
+#     never a production version tag.
+#
+# Home Assistant source of truth is the versioned tag
+# (`ghcr.io/djfabfab/thorsten-kokoro-ha-addon:<VERSION>` via `image:` in
+# thorsten_kokoro/config.yaml). No `latest` tag is built or referenced.
+#
+# Auth uses GITHUB_TOKEN only (no extra secrets). The workflow never
+# self-commits to the repository.
+#
+# Third-party actions are pinned by immutable SHA (version recorded):
+#   - actions/checkout@v7.0.1 ............ 3d3c42e5aac5ba805825da76410c181273ba90b1
+#   - docker/setup-qemu-action@v4.4.0 .... 99012661954931238ded8c8b007157a8430204e1
+#   - docker/setup-buildx-action@v4.4.1 .. f87e5991a6d7451dcb8d9637bfbc97413f497069
+#   - docker/login-action@v4.6.0 ......... dbcb813823bdd20940b903addbd779551569679f
+#   - docker/build-push-action@v7.4.0 .... c3c9e263c25d99ce0380d002d59b67737d91b0dc
+
+name: Build and publish images
+
+on:
+  push:
+    tags:
+      - "v*"
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      push:
+        description: "Push a test (SHA) image to GHCR (never pushes a production version tag)"
+        required: false
+        default: false
+        type: boolean
+
+# GITHUB_TOKEN only. Attestation permissions (id-token, attestations) are
+# included so build provenance attestation works where supported.
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  attestations: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/djfabfab/thorsten-kokoro-ha-addon
+  CONFIG_FILE: thorsten_kokoro/config.yaml
+  BUILD_CONTEXT: thorsten_kokoro/
+  DOCKERFILE: thorsten_kokoro/Dockerfile
+
+jobs:
+  build:
+    name: Build (and conditionally push) multi-arch image
+    runs-on: ubuntu-latest
+    # ARM64 emulation of a ~2.7 GB CPU image is slow; allow ample headroom.
+    timeout-minutes: 120
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Determine version and push plan (gate before login/push)
+        id: prep
+        run: |
+          set -euo pipefail
+          CONFIG_VERSION="$(python3 -c "import yaml; print(str(yaml.safe_load(open('${CONFIG_FILE}'))['version']))")"
+          echo "config_version=${CONFIG_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Config version: ${CONFIG_VERSION}"
+
+          EVENT="${{ github.event_name }}"
+          REF="${{ github.ref }}"
+          REF_NAME="${{ github.ref_name }}"
+          REF_TYPE="${{ github.ref_type }}"
+          SHORT_SHA="$(echo '${{ github.sha }}' | cut -c1-7)"
+
+          IS_PROD_TAG="false"
+          VERSION=""
+          if [ "${EVENT}" = "push" ] && [ "${REF_TYPE}" = "tag" ]; then
+            case "${REF_NAME}" in
+              v*)
+                IS_PROD_TAG="true"
+                VERSION="${REF_NAME#v}"
+                ;;
+              *)
+                echo "::error::Tag '${REF_NAME}' does not match required 'v*' pattern."
+                exit 1
+                ;;
+            esac
+          fi
+
+          if [ "${IS_PROD_TAG}" = "true" ]; then
+            echo "Tag version: ${VERSION} (from ${REF})"
+            if [ "${VERSION}" != "${CONFIG_VERSION}" ]; then
+              echo "::error::Version mismatch: tag version '${VERSION}' != config.yaml version '${CONFIG_VERSION}'. Update both to the same version before release."
+              exit 1
+            fi
+            echo "Version check passed: ${VERSION} == ${CONFIG_VERSION}"
+            TAGS="${IMAGE_NAME}:${VERSION}"
+            SHOULD_PUSH="true"
+          elif [ "${EVENT}" = "push" ]; then
+            # Push to main (non-tag): test build with SHA tag only.
+            TAGS="${IMAGE_NAME}:sha-${SHORT_SHA}"
+            SHOULD_PUSH="true"
+          elif [ "${EVENT}" = "workflow_dispatch" ] && [ "${{ inputs.push }}" = "true" ]; then
+            # Manual dispatch with explicit opt-in: test tag only, never VERSION.
+            TAGS="${IMAGE_NAME}:dispatch-${SHORT_SHA}"
+            SHOULD_PUSH="true"
+          else
+            # Pull requests and default dispatches: build only, no push.
+            TAGS="${IMAGE_NAME}:pr-${SHORT_SHA}"
+            SHOULD_PUSH="false"
+          fi
+
+          # Hard guard: only a v* tag build may publish a production version tag.
+          if [ "${IS_PROD_TAG}" != "true" ]; then
+            case "${TAGS}" in
+              "${IMAGE_NAME}:${CONFIG_VERSION}")
+                echo "::error::Refusing to push production version tag from non-tag event '${EVENT}'."
+                exit 1
+                ;;
+            esac
+          fi
+
+          echo "is_production=${IS_PROD_TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+          echo "should_push=${SHOULD_PUSH}" >> "$GITHUB_OUTPUT"
+          echo "Plan: event=${EVENT} ref=${REF} production=${IS_PROD_TAG} push=${SHOULD_PUSH} tags=${TAGS}"
+
+      - name: Log in to GHCR
+        # Runs only after the version gate above passed, and only when the
+        # plan calls for a push (tag production, main SHA test, or dispatch
+        # opt-in). PR and default-dispatch builds never reach this step.
+        if: steps.prep.outputs.should_push == 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ env.BUILD_CONTEXT }}
+          file: ${{ env.DOCKERFILE }}
+          platforms: linux/amd64,linux/arm64
+          push: ${{ steps.prep.outputs.should_push == 'true' }}
+          tags: ${{ steps.prep.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
